@@ -1,4 +1,13 @@
-# CSC642_Project
+# Oral Temperature Prediction with Infrared Thermography Using Tree-based Regression Models
+
+
+
+
+
+
+
+
+
 This is the final project materials of CSC642. 
 CSC642_Project is the final report.
 FLIR_data.csv is the dataset used in the project, Dictionary1 and Dictionary2 are the data dictionary.
