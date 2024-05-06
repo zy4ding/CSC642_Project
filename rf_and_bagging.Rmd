@@ -1,0 +1,137 @@
+---
+title: "CSC642-project"
+author: "Zhixin Mao"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+
+```{r}
+library(dplyr)
+
+# read data
+df = read.csv("/Users/mzx/Desktop/CSC642/CSC642-project/FLIR_data.csv", header=T)
+df = df[,c(-1,-37,-38,-39)]
+df = df[complete.cases(df),]
+df = df %>%
+  mutate(
+    Age = ifelse(Age=="21-25"|Age=="26-30","21-30",Age),
+    Age = as.factor(Age),
+    Gender = as.factor(Gender),
+    Ethnicity = as.factor(Ethnicity)
+  )
+head(df)
+```
+```{r}
+summary(df[,c(30,31,32)])
+```
+```{r}
+sum(is.na(df))
+```
+```{r}
+cor(df[,c(-30,-31,-32)])
+```
+
+```{r}
+library(corrplot)
+corrplot(cor(df[,c(-30,-31,-32)]))
+```
+```{r}
+library(tidyr)
+df[,c(-30,-31,-32)] %>%
+  pivot_longer(everything()) %>%
+  group_by(name) %>%
+  summarise_at(vars(value), list(Min = min, Mean = mean, Max = max, Sd = sd)) %>%
+  mutate(Mean=round(Mean, 2),
+         Sd=round(Sd,2))
+```
+
+
+
+
+
+
+
+
+```{r}
+# split data
+set.seed(123)
+n = dim(df)[1]
+ind = sample(n, size=0.8*n)
+train = df[ind,]
+dim(train)
+test = df[-ind,]
+dim(test)
+```
+
+
+# bagging
+```{r}
+library(randomForest)
+
+set.seed(1)
+
+bag.oralf = randomForest(aveOralF~.-aveOralM, data=train, mtry=33, importance=T)
+varImpPlot(bag.oralf)
+```
+```{r}
+y_hat = predict(bag.oralf, newdata = test)
+sqrt(mean((y_hat-test$aveOralF)^2))
+```
+
+```{r}
+bag.oralm = randomForest(aveOralM~.-aveOralF, data=train, mtry=33, importance=T)
+varImpPlot(bag.oralm)
+```
+```{r}
+y_hat = predict(bag.oralm, newdata = test)
+sqrt(mean((y_hat-test$aveOralM)^2))
+```
+
+
+
+# random forests
+```{r}
+set.seed(3)
+rf.oralf.cv = rfcv(trainx=df[,c(-28,-29)], trainy=df$aveOralF, cv.fold=5)
+rf.oralf.cv$n.var
+rf.oralf.cv$error.cv
+```
+
+```{r}
+rf.oralf = randomForest(aveOralF~.-aveOralM, data=train, mtry=16, importance=T)
+y_hat = predict(rf.oralf, newdata = test)
+sqrt(mean((y_hat-test$aveOralF)^2))
+```
+```{r}
+varImpPlot(rf.oralf)
+```
+
+
+```{r}
+set.seed(2)
+rf.oralm.cv = rfcv(trainx=df[,c(-28,-29)], trainy=df$aveOralM, cv.fold=5)
+rf.oralm.cv$n.var
+rf.oralm.cv$error.cv
+```
+
+```{r}
+rf.oralm = randomForest(aveOralM~.-aveOralF, data=train, mtry=16, importance=T)
+varImpPlot(rf.oralm)
+```
+```{r}
+y_hat = predict(rf.oralm, newdata = test)
+sqrt(mean((y_hat-test$aveOralM)^2))
+```
+
+
+
+
+
+
+
+
+
+
+
